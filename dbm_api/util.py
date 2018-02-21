@@ -9,107 +9,128 @@ from apiclient.discovery import build
 
 class DBMQuery():
     """
-    Class for making queries to API
+    Additional layer for simplifying mundane interactions with DBM API.
     """
 
     def __init__(self, auth_json):
         """
-        prepare OAuth2 credentials for service-to-service API calls
+        authorize http requests for service account
         """
         self.auth_json = auth_json
         self.scope = ['https://www.googleapis.com/auth/doubleclickbidmanager']
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(self.auth_json, self.scope)
+        self.http_auth = self.credentials.authorize(Http())
 
-    def authorize(self):
+        # client is Google's API client class
+        self.client = build('doubleclickbidmanager', 'v1', http=self.http_auth)
+
+
+    def run_query(self, query_id, daterange, startdate=None, enddate=None):
         """
-        authorize with Google's OAuth2 and build our API object
+        Run pre-compiled query in DBM. DOES NOT SUPPORT CUSTOM DATES YET!
+        :param query_id: QueryID in DBM
+        :return: json response from DBM
         """
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(self.auth_json, self.scope)
-        http_auth = credentials.authorize(Http())
+        DATE_RANGE = ("ALL_TIME",
+                     "CURRENT_DAY",
+                     "LAST_14_DAYS",
+                     "LAST_30_DAYS",
+                     "LAST_365_DAYS",
+                     "LAST_7_DAYS",
+                     "LAST_90_DAYS",
+                     "MONTH_TO_DATE",
+                     "PREVIOUS_DAY",
+                     "PREVIOUS_HALF_MONTH",
+                     "PREVIOUS_MONTH",
+                     "PREVIOUS_QUARTER",
+                     "PREVIOUS_WEEK",
+                     "PREVIOUS_YEAR",
+                     "QUARTER_TO_DATE",
+                     "TYPE_NOT_SUPPORTED",
+                     "WEEK_TO_DATE",
+                     "YEAR_TO_DATE"
+                     )
 
-        return build('doubleclickbidmanager', 'v1', http=http_auth)
+        if daterange in DATE_RANGE:
+            body = {
+                "dataRange": daterange,
+                "timezoneCode": "Europe/Warsaw"
+            }
 
+            return self.client.queries().runquery(queryId=query_id, body=body).execute()
 
-def run_query(query_id, client):
-    """
-    Run pre-compiled query in DBM.
-    :param query_id: QueryID in DBM
-    :param client: DBM authorized client
-    :return: json response from DBM
-    """
-    json_body = """
-                    {
-                      "dataRange": "YESTERDAY",
-                      "timezoneCode": "Europe/Warsaw"
-                    }
-                    """
-    body = json.loads(json_body)
-    return client.queries().runquery(queryId=query_id, body=body).execute()
-
-
-def list_queries(client):
-    """
-    List available created queries in DBM
-    :param client: QueryID in DBM
-    :return:
-    """
-    query = client.queries().listqueries().execute()
-
-    try:
-        print("Query ID", "Name", "Last run date", "Is running?", sep=" | ")
-        for q in query['queries']:
-            print(q['queryId'],
-                  q['metadata']['title'],
-                  datetime.fromtimestamp(int(q['metadata']['latestReportRunTimeMs']) / 1000.0).strftime(
-                      '%Y-%m-%d %H:%M:%S'),
-                  q['metadata']['running'],
-                  sep=" | ")
-    except KeyError:
-        print("No queries are created for this account. Use -c to create new one.")
-        exit(0)
-
-def create_query(file, client):
-    """
-    Create new query from json.
-    :param body: json with query parameters
-    :param client: DBM authorized client
-    :return:
-    """
-    try:
-        with open(file) as file:
-            body = json.load(file)
-    except AttributeError:
-        raise AttributeError("{} is not a file, please specify path to json file".format(body))
-    except json.decoder.JSONDecodeError:
-        raise TypeError("{} is not a json file".format(body))
-
-    return client.queries().createquery(body=body).execute()
+        else:
+            raise ValueError("{} is not within approved dateranges. "
+                             "Check https://developers.google.com/bid-manager/v1/queries for more information".format(daterange))
 
 
-def download_query(query_id, client):
-    """
-    Returns URL to existing report in DBM
-    :param query_id: QueryID in DBM
-    :param client: DBM authorized client
-    :return:
-    """
-    query = client.queries().getquery(queryId=query_id).execute()
+    def list_queries(self):
+        """
+        List available created queries in DBM
+        :param client: QueryID in DBM
+        :return: print queries to stdout
+        """
+        query = self.client.queries().listqueries().execute()
 
-    if not query:
-        raise ValueError("Query ID {} does not exist in DBM. Have you run query before downloading it?".format(query_id))
-    elif query['metadata']['running']:
-        raise RuntimeWarning("Query ID {} is still running!".format(query_id))
-    else:
-        return query['metadata']['googleCloudStoragePathForLatestReport']
+        try:
+            print("Query ID", "Name", "Data Range", "Last run date", "Is running?", sep=" | ")
+            for q in query['queries']:
+                print(q['queryId'],
+                      q['metadata']['title'],
+                      q['metadata']['dataRange'],
+                      datetime.fromtimestamp(int(q['metadata']['latestReportRunTimeMs']) / 1000.0).strftime(
+                          '%Y-%m-%d %H:%M:%S'),
+                      q['metadata']['running'],
+                      sep=" | ")
+        except KeyError:
+            print("No queries are created for this account. Use -c to create new one.")
+            exit(0)
+
+    def create_query(self, file):
+        """
+        Create new query from json.
+        :param body: json with query parameters
+        :param client: DBM authorized client
+        :return: empty Http response
+        """
+        try:
+            with open(file) as file:
+                body = json.load(file)
+        except AttributeError:
+            raise AttributeError("{} is not a file, please specify path to json file".format(body))
+        except json.decoder.JSONDecodeError:
+            raise TypeError("{} is not a json file".format(body))
+
+        return self.client.queries().createquery(body=body).execute()
 
 
-def delete_query(query_id, client):
-    """
-    Delete query ID in DBM with its associated reports.
-    :param query_id: QueryID in DBM
-    :param client: DBM authorized client
-    """
-    return client.queries().deletequery(queryId=query_id).execute()
+    def download_query(self, query_id):
+        """
+        Returns URL to existing report in DBM
+        :param query_id: QueryID in DBM
+        :return: URL to file
+        """
+        query = self.client.queries().getquery(queryId=query_id).execute()
 
+        if not query:
+            raise ValueError("Query ID {} does not exist in DBM. Have you run query before downloading it?".format(query_id))
+        elif query['metadata']['running']:
+            raise RuntimeWarning("Query ID {} is still running!".format(query_id))
+        else:
+            return query['metadata']['googleCloudStoragePathForLatestReport']
+
+
+    def delete_query(self, query_id):
+        """
+        Delete query ID in DBM with its associated reports.
+        :param query_id: QueryID in DBM
+        """
+        return self.client.queries().deletequery(queryId=query_id).execute()
+
+
+"""
+Additional functions for formatting data
+"""
 
 def clean_date_value(str):
     """
