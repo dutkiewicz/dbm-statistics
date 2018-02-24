@@ -1,16 +1,31 @@
-import requests
+from time import sleep
 from decouple import config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from core.models import Base, MetaNames, BasicStats
 from core.util import DBMQuery, clean_date_value, clean_currency_value
 
-# 1. Fetch report from DBM API
+
+# 1. run query with PREVIOUS_DAY data
 dbm = DBMQuery(config('API_KEY_FILE'))
-report = dbm.download_query(config('QUERY_BASIC_STATS'), type='dict')
+query_id = config('QUERY_BASIC_STATS')
+
+dbm.run_query(query_id, 'PREVIOUS_DAY')
 
 # -----------------------------------------------------------------------------------
-# 2. save report data to SQL
+# 2. Fetch report from DBM API
+# check if query is still running (exception RuntimeWarning). If not, proceed.
+is_running = True
+while is_running:
+    try:
+        report = dbm.download_query(query_id, type='dict')
+        is_running = False
+    except RuntimeWarning:
+        sleep(60)
+        continue
+
+# -----------------------------------------------------------------------------------
+# 3. save report data to SQL
 
 engine = create_engine(config('DB_URI'), echo=True)
 
