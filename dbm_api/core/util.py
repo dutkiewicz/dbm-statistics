@@ -28,7 +28,7 @@ class DBMQuery():
         self.client = build('doubleclickbidmanager', 'v1', http=self.http_auth)
 
 
-    def run_query(self, query_id, daterange, startdate=None, enddate=None):
+    def run_query(self, query_id, daterange):
         """
         Run pre-compiled query in DBM. DOES NOT SUPPORT CUSTOM DATES YET!
         :param query_id: QueryID in DBM
