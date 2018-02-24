@@ -2,7 +2,10 @@ from datetime import datetime
 from httplib2 import Http
 import json
 import re
+import csv
+import io
 
+import requests
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
 
@@ -104,7 +107,7 @@ class DBMQuery():
         return self.client.queries().createquery(body=body).execute()
 
 
-    def download_query(self, query_id):
+    def get_query_url_to_file(self, query_id):
         """
         Returns URL to existing report in DBM
         :param query_id: QueryID in DBM
@@ -119,6 +122,21 @@ class DBMQuery():
         else:
             return query['metadata']['googleCloudStoragePathForLatestReport']
 
+    def download_query(self, query_id, type='content'):
+        """
+        Returns Http request's raw data
+        :param query_id: QueryID in DBM
+        :param type: raw - request.raw; csv_dict = csv.DictReader
+        :return: raw = binary, dict = OrderedDict; else None
+        """
+        file = requests.get(self.get_query_url_to_file(query_id))
+
+        if type == 'binary':
+            return file.content
+        elif type == 'dict':
+            return csv.DictReader(io.StringIO(file.text))
+        else:
+            return None
 
     def delete_query(self, query_id):
         """
@@ -140,7 +158,7 @@ def clean_date_value(str):
     """
     return datetime.strptime(str, '%Y/%m/%d')
 
-def clean_money_value(str):
+def clean_currency_value(str):
     """
     Clean money value and return as float.
     :param str
