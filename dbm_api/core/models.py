@@ -44,3 +44,5 @@ class BasicStats(Base):
     post_click_conversions = Column(Integer)
     total_cost = Column(Numeric(12, 6))
     media_cost = Column(Numeric(12, 6))
+
+    __table_args__ = (UniqueConstraint('date', 'line_item_id', name='unique_li_per_date'), )
