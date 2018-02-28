@@ -4,7 +4,7 @@ import json
 import re
 import csv
 import io
-
+import pytz
 import requests
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
@@ -28,37 +28,59 @@ class DBMQuery():
         self.client = build('doubleclickbidmanager', 'v1', http=self.http_auth)
 
 
-    def run_query(self, query_id, daterange):
+    def run_query(self, query_id, daterange, start_date=None, end_date=None, timezone='America/New_York'):
         """
         Run pre-compiled query in DBM. DOES NOT SUPPORT CUSTOM DATES YET!
         :param query_id: QueryID in DBM
+        :param daterange: predefined date ranges in DBM (see documentation: https://developers.google.com/bid-manager/v1/queries
+        :param start_date: if daterange == "CUSTOM_DATES" then provide report start date in YYYY-MM-DD format
+        :param end_date: if daterange == "CUSTOM_DATES" then provide report end date in YYYY-MM-DD format
+        :param timezone: Canonical timezone code for report data time. Defaults to America/New_York.
         :return: json response from DBM
         """
         DATE_RANGE = ("ALL_TIME",
-                     "CURRENT_DAY",
-                     "LAST_14_DAYS",
-                     "LAST_30_DAYS",
-                     "LAST_365_DAYS",
-                     "LAST_7_DAYS",
-                     "LAST_90_DAYS",
-                     "MONTH_TO_DATE",
-                     "PREVIOUS_DAY",
-                     "PREVIOUS_HALF_MONTH",
-                     "PREVIOUS_MONTH",
-                     "PREVIOUS_QUARTER",
-                     "PREVIOUS_WEEK",
-                     "PREVIOUS_YEAR",
-                     "QUARTER_TO_DATE",
-                     "TYPE_NOT_SUPPORTED",
-                     "WEEK_TO_DATE",
-                     "YEAR_TO_DATE"
-                     )
+                      "CURRENT_DAY",
+                      "CUSTOM_DATES",
+                      "LAST_14_DAYS",
+                      "LAST_30_DAYS",
+                      "LAST_365_DAYS",
+                      "LAST_7_DAYS",
+                      "LAST_90_DAYS",
+                      "MONTH_TO_DATE",
+                      "PREVIOUS_DAY",
+                      "PREVIOUS_HALF_MONTH",
+                      "PREVIOUS_MONTH",
+                      "PREVIOUS_QUARTER",
+                      "PREVIOUS_WEEK",
+                      "PREVIOUS_YEAR",
+                      "QUARTER_TO_DATE",
+                      "TYPE_NOT_SUPPORTED",
+                      "WEEK_TO_DATE",
+                      "YEAR_TO_DATE"
+                      )
+
+        def date_to_miliseconds(date):
+            try:
+                utc = pytz.timezone(timezone) #assert that we're using correct timezone for DBM
+                miliseconds = round(datetime.timestamp(utc.localize(date)) * 1000)
+                return miliseconds
+            except ValueError:
+                raise ValueError("{} is not a valid format, please provide" \
+                                 " date object.".format(str))
+
 
         if daterange in DATE_RANGE:
             body = {
                 "dataRange": daterange,
-                "timezoneCode": "Europe/Warsaw"
+                "timezoneCode": timezone
             }
+
+            if daterange == 'CUSTOM_DATES':
+                body.update({
+                    "reportDataStartTimeMs": date_to_miliseconds(start_date),
+                    "reportDataEndTimeMs": date_to_miliseconds(end_date)
+                })
+
 
             return self.client.queries().runquery(queryId=query_id, body=body).execute()
 
