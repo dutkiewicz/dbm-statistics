@@ -1,6 +1,7 @@
 import os
 import logging
 from time import sleep
+from datetime import datetime, timedelta
 
 from decouple import config
 from sqlalchemy import create_engine
@@ -12,12 +13,14 @@ CWD = os.path.dirname(os.path.abspath(__file__))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 1. run query with PREVIOUS_DAY data
+# 1. run query with data from previous day
+daterange = datetime.today() - timedelta(days=1)
+
 dbm = DBMQuery(os.path.join(CWD, config('API_KEY_FILE')))
 query_id = config('QUERY_BASIC_STATS')
 
-logger.info("Running query {} with data from yesterday...".format(query_id))
-dbm.run_query(query_id, 'PREVIOUS_DAY')
+logger.info("Running query {} with data from {}...".format(query_id, daterange))
+dbm.run_query(query_id, 'CUSTOM_DATES', start_date=daterange, end_date=daterange, timezone="Europe/Warsaw")
 
 # -----------------------------------------------------------------------------------
 # 2. Fetch report from DBM API
