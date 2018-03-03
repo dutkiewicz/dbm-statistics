@@ -27,6 +27,7 @@ else:
     raise OSError("API key {} does not exist".format(args.api_key))
 
 if args.list:
+    print("Listing queries...")
     dbm.list_queries()
 
 if args.download_report:
@@ -41,9 +42,11 @@ if args.download_report:
     print("File saved!")
 
 if args.run_query:
+    print("Preparing to run query.")
     dbm.run_query(args.run_query[0], args.run_query[1])
 
 if args.create_query:
+    print("Creating query.")
     dbm.create_query(args.create_query[0])
 
 if args.remove_query:
