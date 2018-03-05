@@ -27,12 +27,11 @@ dbm.run_query(query_id, 'CUSTOM_DATES', start_date=daterange, end_date=daterange
 # check if query is still running (exception RuntimeWarning). If not, proceed.
 logger.info("Downloading report...")
 
-is_running = True
-while is_running:
+while True:
     try:
         report = dbm.download_query(query_id, type='dict')
-        is_running = False
         logger.info("Downloaded!")
+        break
     except RuntimeWarning:
         logger.info("Query is still running, waiting 1 minute...")
         sleep(60)
