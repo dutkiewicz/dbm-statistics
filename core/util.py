@@ -186,5 +186,7 @@ def clean_currency_value(str):
     :param str
     :return: float
     """
-    match = "([a-zA-Z])|([,])"
-    return float(re.sub(match, "", str))
+    pattern = re.compile('[^.0-9]+')
+    match = re.sub(pattern, '', str)
+
+    return float(match)
