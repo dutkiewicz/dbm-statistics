@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from core.util import DBMQuery, clean_currency_value, clean_date_value
 
 
@@ -52,6 +53,43 @@ class CleanCurrenyValueTest(unittest.TestCase):
         target = 100.001
         self.assertEqual(clean_currency_value(value), target)
 
+
+class CleanDateValueTest(unittest.TestCase):
+    """
+    Does parsing date string return correct datetime object?
+    """
+
+    def test_YYYY_slash_mm_slash_dd(self):
+        """Test format %Y/%m/%d"""
+
+        value = '2018/01/01'
+        target = datetime(2018, 1, 1)
+
+        self.assertEqual(clean_date_value(value), target)
+
+    def test_YYYY_dash_mm_dash_dd(self):
+        """Test format %Y-%m-%d"""
+
+        value = '2018-01-01'
+        target = datetime(2018, 1, 1)
+
+        self.assertEqual(clean_date_value(value), target)
+
+    def test_YYYY_dot_mm_dot_dd(self):
+        """Test format %Y.%m.%d"""
+
+        value = '2018.01.01'
+        target = datetime(2018, 1, 1)
+
+        self.assertEqual(clean_date_value(value), target)
+
+    def test_YYYY_slash_dd_slash_mm(self):
+        """Test format %Y/%d/%m"""
+
+        value = '2018/30/01'
+        target = datetime(2018, 1, 30)
+
+        self.assertEqual(clean_date_value(value), target)
 
 if __name__ == '__main__':
     unittest.main()
