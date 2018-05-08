@@ -178,7 +178,20 @@ def clean_date_value(str):
     :param str: YYYY/MM/DD
     :return: datetime object
     """
-    return datetime.strptime(str, '%Y/%m/%d')
+    try:
+        return datetime.strptime(str, '%Y/%m/%d')
+    except ValueError:
+        try:
+            return datetime.strptime(str, '%Y-%m-%d')
+        except ValueError:
+            try:
+                return datetime.strptime(str, '%Y.%m.%d')
+            except ValueError:
+                try:
+                    return datetime.strptime(str, '%Y/%d/%m')
+                except ValueError as e:
+                    raise ValueError(e)
+
 
 def clean_currency_value(str):
     """
