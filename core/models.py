@@ -46,3 +46,26 @@ class BasicStats(Base):
     media_cost = Column(Numeric(12, 6))
 
     __table_args__ = (UniqueConstraint('date', 'line_item_id', name='unique_li_per_date'), )
+
+
+class ConversionPixels(Base):
+    __tablename__ = 'dbm_conversion_stats'
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date)
+    line_item_id = Column(Integer)
+    conversion_id = Column(Integer)
+    total_conversions = Column(Integer)
+    post_click_conversions = Column(Integer)
+    post_click_revenue = Column(Numeric(12, 6))
+    post_view_revenue = Column(Numeric(12, 6))
+
+    __table_args__ = (UniqueConstraint('date', 'line_item_id', 'conversion_id', name='unique_conversion_per_day'), )
+
+
+class ConversionPixelsMetaNames(Base):
+    __tablename__ = 'dbm_conversion_names'
+
+    id = Column(Integer, primary_key=True)
+    conversion_id = Column(Integer, unique=True)
+    conversion_name = Column(String(250))

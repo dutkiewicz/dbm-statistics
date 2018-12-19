@@ -7,7 +7,7 @@ import io
 import pytz
 import requests
 from oauth2client.service_account import ServiceAccountCredentials
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 
 class DBMQuery():
@@ -16,9 +16,6 @@ class DBMQuery():
     """
 
     def __init__(self, auth_json):
-        """
-        authorize http requests for service account
-        """
         self.auth_json = auth_json
         self.scope = ['https://www.googleapis.com/auth/doubleclickbidmanager']
         self.credentials = ServiceAccountCredentials.from_json_keyfile_name(self.auth_json, self.scope)
@@ -30,7 +27,7 @@ class DBMQuery():
 
     def run_query(self, query_id, daterange, start_date=None, end_date=None, timezone='America/New_York'):
         """
-        Run pre-compiled query in DBM. DOES NOT SUPPORT CUSTOM DATES YET!
+        Run pre-compiled query in DBM.
         :param query_id: QueryID in DBM
         :param daterange: predefined date ranges in DBM (see documentation: https://developers.google.com/bid-manager/v1/queries
         :param start_date: if daterange == "CUSTOM_DATES" then provide report start date in YYYY-MM-DD format
@@ -81,7 +78,6 @@ class DBMQuery():
                     "reportDataEndTimeMs": date_to_miliseconds(end_date)
                 })
 
-
             return self.client.queries().runquery(queryId=query_id, body=body).execute()
 
         else:
@@ -114,8 +110,7 @@ class DBMQuery():
     def create_query(self, file):
         """
         Create new query from json.
-        :param body: json with query parameters
-        :param client: DBM authorized client
+        :param file: json with query parameters
         :return: empty Http response
         """
         try:
@@ -144,7 +139,7 @@ class DBMQuery():
         else:
             return query['metadata']['googleCloudStoragePathForLatestReport']
 
-    def download_query(self, query_id, type='content'):
+    def download_query(self, query_id, type='dict'):
         """
         Returns Http request's raw data
         :param query_id: QueryID in DBM

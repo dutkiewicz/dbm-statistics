@@ -1,13 +1,9 @@
-import os
 import argparse
-import csv
+import os
 
 import requests
-from decouple import config
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from core.util import DBMQuery, clean_date_value, clean_currency_value
-from core.models import BasicStats, Base
+
+from core.util import DBMQuery
 
 # parse arguments from CLI
 parser = argparse.ArgumentParser(description="Set flags for your download")
