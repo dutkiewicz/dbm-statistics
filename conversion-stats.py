@@ -61,7 +61,7 @@ for row in report:
 
     if row['DV360 Activity'] != 'Total':  # 'Total' in report is a sum of all LI conversions and not needed
         if int(row['DV360 Activity ID']) not in conversion_ids_from_db:
-            record_meta = ConversionPixelsMetaNames(conversion_id=row['DV360 Activity ID'],
+            record_meta = ConversionPixelsMetaNames(conversion_id=int(row['DV360 Activity ID']),
                                                     conversion_name=row['DV360 Activity'])
             conversion_ids_from_db.append(int(row['DV360 Activity ID']))
         else:
@@ -71,10 +71,10 @@ for row in report:
         session.add(record_meta)
 
         record_stats = ConversionPixels(date=clean_date_value(row['Date']),
-                                        line_item_id=row['Line Item ID'],
-                                        conversion_id=row['DV360 Activity ID'],
-                                        total_conversions=row['Total Conversions'],
-                                        post_click_conversions=row['Post-Click Conversions'],
+                                        line_item_id=int(row['Line Item ID']),
+                                        conversion_id=int(row['DV360 Activity ID']),
+                                        total_conversions=int(float(row['Total Conversions'])),
+                                        post_click_conversions=int(float(row['Post-Click Conversions'])),
                                         post_click_revenue=row['CM Post-Click Revenue'],
                                         post_view_revenue=row['CM Post-View Revenue'])
 
